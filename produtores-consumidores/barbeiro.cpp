@@ -14,18 +14,18 @@ using namespace std;
 queue<int> buffer;
 bool barbeiros[N_BARBEIROS];
 
-void *atender_cliente(void *args) {
+void *atender_cliente(void *args) { // Tempo para o barbeiro atender ao cliente
     int n;
 
     n = rand()%50;
     sleep(n);
 }
 
-int achar_livre() {
+int achar_livre() { // Acha um barbeiro que possa atender
     int i;
 
     for (i = 0; i < N_BARBEIROS; i++) {
-        if(barbeiros[i]==false) {
+        if(barbeiros[i]==false) { //verifica se o barbeiro está disponivel
             return i;
         }
     }
@@ -35,24 +35,33 @@ int achar_livre() {
 int main() {
     pthread_t *threads;
     int num_barbeiros, i;
+    int n;
     int cont_clientes=1, livre;
 
     threads = (pthread_t*) malloc(sizeof(pthread_t)*num_barbeiros);
     memset(barbeiros, 0, N_BARBEIROS);
 
+    cout << "O expediente está começando e o barbeiro vai arrumar a barbearia!"<< '\n';
+
     for (i = 0; i < 30; i++) {
-        n = rand()%10;
+
+        n = rand()%10; // sincronização
         sleep(n);
-        cout << "Cliente " << cont_barbeiros << " entrando."
+        cout << "Cliente " << cont_clientes << " entrando na barbearia." << '\n';
 
         livre = achar_livre();
-        if(livre<0) {
-            buffer.push_back(cont_clientes);
+        if(livre < 0) {
+            cout << "Cliente" << cont_clientes << "está esperando";
+            buffer.push(cont_clientes);
         } else {
             if(pthread_create(&threads[livre], NULL, atender_cliente, (void*)livre)) {
-                cout << "Barbeiro " << cont_barbeiros+1 << "não pode atender";
+                cout << "Barbeiro " << livre << "não pode atender";
             } else{
-                printf("Disparando Thread %ld\n", k);
+                cout << "O Barbeiro " << livre << " está atendendo o clinte " << cont_clientes << '\n';
+                barbeiros[livre] = true;
+                atender_cliente();
+                cout << "Corte t0p" <<'\n';
+                barbeiros[livre] = false;
             }
         }
 
