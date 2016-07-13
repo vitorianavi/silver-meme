@@ -15,6 +15,8 @@ sem_t semaforo;
 
 queue<int> buffer;
 bool barbeiros[N_BARBEIROS];
+int barbeiros_ocupados=0;
+int prox_cliente=0;
 
 void *atender_cliente(void *arg) { // Tempo para o barbeiro atender ao cliente
     int n;
@@ -22,6 +24,7 @@ void *atender_cliente(void *arg) { // Tempo para o barbeiro atender ao cliente
 
     sem_wait(&semaforo);
     barbeiros[barbeiro] = false;
+    barbeiros_ocupados += 1;
     sem_post(&semaforo);
 
     n = rand()%50;
@@ -29,6 +32,11 @@ void *atender_cliente(void *arg) { // Tempo para o barbeiro atender ao cliente
 
     sem_wait(&semaforo);
     barbeiros[barbeiro] = true;
+    barbeiros_ocupados -= 1;
+    if(buffer.size() != 0) {
+        prox_cliente = buffer.front();
+        buffer.pop();
+    }
     sem_post(&semaforo);
 }
 
@@ -45,14 +53,14 @@ int achar_livre() { // Acha um barbeiro que possa atender
 
 int main() {
     pthread_t *threads;
-    int num_barbeiros, i;
-    int n;
+    int num_barbeiros, i, n;
     int cont_clientes=1, livre;
+    bool atender;
 
     threads = (pthread_t*) malloc(sizeof(pthread_t)*num_barbeiros);
     memset(barbeiros, 0, N_BARBEIROS);
 
-    /* Inicializa o semáforo. O segundo argumento indica que será compartilhado entre as threads de um mesmo processo.
+    /* Inicializando o semáforo. O segundo argumento indica que será compartilhado entre as threads de um mesmo processo.
     O terceiro argumento especifica o valor inicial indicando que está livre.*/
     sem_init(&semaforo, 0, 1);
 
@@ -64,16 +72,26 @@ int main() {
         sleep(n);
         cout << "Cliente " << i+1 << " entrando na barbearia." << '\n';
 
-        livre = achar_livre();
-        if(livre < 0) {
-            cout << "Cliente" << i+1 << "está esperando";
-            buffer.push(cont_clientes);
+        if(buffer.size() != 0) {
+            atender = false;
         } else {
-            if(pthread_create(&threads[livre], NULL, atender_cliente, (void*)livre)) {
-                cout << "Barbeiro " << livre << "não pode atender";
+            livre = achar_livre();
+            if(livre < 0) {
+                atender = false;
             } else {
-                cout << "O Barbeiro " << livre << " está atendendo o cliente " << i+1 << '\n';
+                atender = true;
             }
+        }
+
+        if(atender) {
+            if(pthread_create(&threads[livre], NULL, atender_cliente, (void*)livre)) {
+                cout << "O barbeiro " << livre << " não pode atender.\n";
+            } else {
+                cout << "O barbeiro " << livre << " está atendendo o cliente " << i+1 << '.\n';
+            }
+        } else {
+            cout << "Cliente " << i+1 << " está esperando.";
+            buffer.push(cont_clientes);
         }
 
         cont_clientes++;
