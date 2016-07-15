@@ -6,94 +6,132 @@
 #include <semaphore.h>
 #include <unistd.h>
 
-#define BUFFER_SIZE 20
+#define BUFFER_SIZE 5
 #define N_BARBEIROS 4
 
 using namespace std;
 
-sem_t semaforo;
+sem_t sem_barbeiro; // semáforo para indicar quando o barbeiro está dormindo. Inicialmente 0 (acordado).
+sem_t sem_cliente; // semáforo para indicar que o cliente está sendo atendido pelo barbeiro. Inicialmente 0 (livre).
+sem_t sem_sala_espera; // semáforo que simula/controla o buffer (fila) de clientes na sala de espera.
+sem_t mutex; // mutex para garantir que somente um cliente está sendo atendido por vez.
+sem_t print_mutex; // mutex auxiliar para impressão
 
-queue<int> buffer;
-bool barbeiros[N_BARBEIROS];
-int barbeiros_ocupados=0;
-int prox_cliente=0;
+queue<int> sala_espera;
+bool finalizado=false; // para indicar quando fechar a thread do barbeiro
+int atual; // indica qual cliente está sendo atendido atualmente
 
-void *atender_cliente(void *arg) { // Tempo para o barbeiro atender ao cliente
-    int n;
-    int barbeiro = (intptr_t) arg;
+void *barbeiro(void *arg) { // Consumidor (barbeiro)
+    int n, barbeiro;
+    //pra quando tiver mais de um barbeiro
+    barbeiro = (intptr_t) arg;
 
-    sem_wait(&semaforo);
-    barbeiros[barbeiro] = false;
-    barbeiros_ocupados += 1;
-    sem_post(&semaforo);
+    while(!finalizado) {
+        cout << "Barbeiro " << barbeiro << " está dormindo zZzZz\n";
+        sem_wait(&sem_barbeiro);
 
-    n = rand()%50;
-    sleep(n);
+        cout << "\nBarbeiro " << barbeiro << " está cortando o cabelo do cliente " << atual << ".\n";
+        n = rand()%10;
+        sleep(n);
+        cout << "\nAgora, barbeiro " << barbeiro << " está fazendo a barba do cliente " << atual << ".\n";
+        n = rand()%10;
+        sleep(n);
+        cout << "\nServiço finalizado com o cliente " << atual << "!\n\n";
 
-    sem_wait(&semaforo);
-    barbeiros[barbeiro] = true;
-    barbeiros_ocupados -= 1;
-    if(buffer.size() != 0) {
-        prox_cliente = buffer.front();
-        buffer.pop();
+        // Liberando o cliente
+        sem_post(&sem_cliente);
     }
-    sem_post(&semaforo);
+
+    cout << "Barbeiro finalizou o expediente!\n- Que dia de cão! - pensou, ao trancar a porta.\n";
 }
 
-int achar_livre() { // Acha um barbeiro que possa atender
-    int i;
-
-    for (i = 0; i < N_BARBEIROS; i++) {
-        if(barbeiros[i]==false) { //verifica se o barbeiro está disponivel
-            return i;
+void imprimir_fila(queue<int> fila) {
+    cout << "---------------------SALA DE ESPERA-----------------------\n";
+    if(fila.size()) {
+        cout << "|";
+        while(!fila.empty()) {
+            cout << fila.front() << "|";
+            fila.pop();
         }
+        cout << "\n";
+    } else {
+        cout << "VAZIA\n\n";
     }
-    return -1;
+}
+
+void *cliente(void *arg) {
+    int num;
+    int cliente = (intptr_t) arg;
+
+    num = rand()%30;
+    sleep(num);
+    cout << "\nCliente " << cliente << " chegando no pedaço!\n";
+    sem_wait(&print_mutex);
+    imprimir_fila(sala_espera);
+    sem_post(&print_mutex);
+
+    if(sala_espera.size() == BUFFER_SIZE) {
+        cout << "\nSalão cheio! Cliente " << cliente << " cabeludo indo embora tristinho :(.\n";
+        return NULL;
+    }
+
+    sem_wait(&sem_sala_espera);
+    cout << "Cliente " << cliente << " esperando por sua vez...\n";
+    sala_espera.push(cliente);
+
+    // Esperando cadeira ser desocupada.
+    sem_wait(&mutex);
+    // Acabou espera na sala.
+    atual = sala_espera.front();
+    sala_espera.pop();
+    sem_post(&sem_sala_espera);
+
+    cout << "Cliente " << cliente << " acordando o barbeiro!\n";
+    imprimir_fila(sala_espera);
+    sem_post(&sem_barbeiro);
+
+    // Esperando o barbeiro finalizar o corte
+    sem_wait(&sem_cliente);
+    // Liberando cadeira
+    sem_post(&mutex);
 }
 
 int main() {
-    pthread_t *threads;
-    int num_barbeiros, i, n;
-    int cont_clientes=1, livre;
-    bool atender;
+    pthread_t *threads_clientes, thread_barbeiro;
+    int num, n_clientes=10;
+    long int i;
 
-    threads = (pthread_t*) malloc(sizeof(pthread_t)*num_barbeiros);
-    memset(barbeiros, 0, N_BARBEIROS);
+    threads_clientes = (pthread_t*) malloc(sizeof(pthread_t)*n_clientes);
+    //threads_barbeiros = (pthread_t*) malloc(sizeof(pthread_t)*N_BARBEIROS);
 
-    /* Inicializando o semáforo. O segundo argumento indica que será compartilhado entre as threads de um mesmo processo.
-    O terceiro argumento especifica o valor inicial indicando que está livre.*/
-    sem_init(&semaforo, 0, 1);
+    /* Inicializando os semáforos. O segundo argumento indica que será compartilhado entre
+    as threads de um mesmo processo. O terceiro argumento especifica o valor inicial.*/
+	sem_init(&sem_barbeiro, 1, 0);
+	sem_init(&sem_cliente, 1, 0);
+    sem_init(&sem_sala_espera, 1, BUFFER_SIZE);
+    sem_init(&mutex, 1, 1);
+    sem_init(&print_mutex, 1, 1);
 
-    cout << "O expediente está começando e o barbeiro vai arrumar a barbearia!"<< '\n';
-
-    for (i = 0; i < 30; i++) {
-
-        n = rand()%10; // sincronização
-        sleep(n);
-        cout << "Cliente " << i+1 << " entrando na barbearia." << '\n';
-
-        if(buffer.size() != 0) {
-            atender = false;
-        } else {
-            livre = achar_livre();
-            if(livre < 0) {
-                atender = false;
-            } else {
-                atender = true;
-            }
+    cout << "*****************************************************************\n";
+    cout << "O expediente está começando e o barbeiro vai arrumar a barbearia!\n\n";
+    // criando as threads dos barbeiros
+    pthread_create(&thread_barbeiro, NULL, barbeiro, NULL);
+    for (i = 1; i <= n_clientes; i++) {
+        // pthread_create retorna 0 se bem-sucedida
+        if(pthread_create(&threads_clientes[i-1], NULL, cliente, (void*)i)) {
+            cout << "O cliente não está contente por algum motivo.\n";
         }
-
-        if(atender) {
-            if(pthread_create(&threads[livre], NULL, atender_cliente, (void*)livre)) {
-                cout << "O barbeiro " << livre << " não pode atender.\n";
-            } else {
-                cout << "O barbeiro " << livre << " está atendendo o cliente " << i+1 << '.\n';
-            }
-        } else {
-            cout << "Cliente " << i+1 << " está esperando.";
-            buffer.push(cont_clientes);
-        }
-
-        cont_clientes++;
     }
+
+    /* Esse parte é responsável por "amarrar" as threads de modo que uma espere pelo término
+    da execução de todas as outras.*/
+    for (i = 0; i < n_clientes; i++) {
+        pthread_join(threads_clientes[i],NULL);
+    }
+
+    // Mata o barbeiro quando todos os clientes forem atendidos
+    finalizado = true;
+    sem_post(&sem_barbeiro);  // Acordar o barbeiro para o abate.
+    pthread_join(thread_barbeiro, NULL);
+    cout << "RIP barbeiro.\n";
 }
