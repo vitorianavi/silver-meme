@@ -14,10 +14,10 @@ using namespace std;
 
 sem_t sem_barbeiro; // semáforo para indicar quando o barbeiro está dormindo. Inicialmente 0 (acordado).
 sem_t sem_cliente; // semáforo para indicar que o cliente está sendo atendido pelo barbeiro. Inicialmente 0 (livre).
+sem_t sem_cadeira; //
 sem_t sem_sala_espera; // semáforo que simula/controla o buffer (fila) de clientes na sala de espera.
 sem_t mutex; // mutex para garantir que somente um cliente está sendo atendido por vez.
 sem_t print_mutex; // mutex auxiliar para impressão
-sem_t mutex_t0p; // vamo que vamo
 
 Color::Modifier green(Color::FG_GREEN);
 Color::Modifier lmagenta(Color::FG_LMAGENTA);
@@ -37,6 +37,7 @@ void *barbeiro(void *arg) { // Consumidor (barbeiro)
     while(!finalizado) {
         cout << green << "Barbeiro " << barbeiro << " está dormindo zZzZz " << def << '\n';
         sem_wait(&sem_barbeiro);
+        sem_wait(&sem_cadeira);
 
 
         cout << "\nBarbeiro " << barbeiro << " está cortando o cabelo do cliente " << atual << ".\n";
@@ -97,11 +98,14 @@ void *cliente(void *arg) {
     cout << "Cliente " << cliente << " acordando o barbeiro!\n";
     imprimir_fila(sala_espera);
     sem_post(&sem_barbeiro);
+    //sem_wait(&sem_cadeira);
 
     // Esperando o barbeiro finalizar o corte
     sem_wait(&sem_cliente);
     // Liberando cadeira
     sem_post(&mutex);
+    sem_post(&sem_cadeira);
+
 }
 
 int main() {
@@ -118,12 +122,12 @@ int main() {
 
     /* Inicializando os semáforos. O segundo argumento indica que será compartilhado entre
     as threads de um mesmo processo. O terceiro argumento especifica o valor inicial.*/
-    sem_init(&sem_barbeiro, 1, 0);
+    sem_init(&sem_barbeiro, 1, n_barbeiros);
     sem_init(&sem_cliente, 1, 0);
+    sem_init(&sem_cadeira, 1, 1);
     sem_init(&sem_sala_espera, 1, BUFFER_SIZE);
     sem_init(&mutex, 1, 1);
     sem_init(&print_mutex, 1, 1);
-    sem_init(&mutex_t0p, 1, 1);
 
     cout << "*****************************************************************\n";
     cout << "O expediente está começando e o barbeiro vai arrumar a barbearia!\n\n";
