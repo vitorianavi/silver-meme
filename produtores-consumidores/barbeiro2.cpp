@@ -97,11 +97,11 @@ void *cliente(void *arg) {
 
 int main() {
     pthread_t *threads_clientes, *threads_barbeiros;
-    int num, n_clientes=10, n_barbeiros=2;
+    int num, n_clientes=10, n_barbeiros;
     long int i;
 
-    //cout<< lcyan <<"------------------------- NÚMERO DE BARBEIROS -------------------------" << def <<'\n';
-    //cin >> n_barbeiros;
+    cout<< lcyan <<"------------------------- NÚMERO DE BARBEIROS -------------------------" << def <<'\n';
+    cin >> n_barbeiros;
 
     threads_clientes = (pthread_t*) malloc(sizeof(pthread_t)*n_clientes);
     threads_barbeiros = (pthread_t*) malloc(sizeof(pthread_t)*n_barbeiros);
