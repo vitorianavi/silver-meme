@@ -1,3 +1,4 @@
+
 #include <iostream>
 #include <queue>
 #include <stdlib.h>
@@ -19,19 +20,20 @@ sem_t mutex;
 Color::Modifier green(Color::FG_GREEN);
 Color::Modifier lmagenta(Color::FG_LMAGENTA);
 Color::Modifier lblue(Color::FG_LBLUE);
+Color::Modifier azul(Color::FG_AZUL);
 Color::Modifier lcyan(Color::FG_LCYAN);
 Color::Modifier def(Color::FG_DEFAULT);
-
+Color::Modifier amarelo(Color::FG_AMARELO);
 queue<int> sala_espera;
 bool finalizado=false; // para indicar quando fechar a thread do barbeiro
 //int atual; // indica qual cliente está sendo atendido atualmente
 
 void imprimir_fila(queue<int> fila) {
-    cout << "---------------------SALA DE ESPERA-----------------------\n";
+    cout << amarelo <<"---------------------SALA DE ESPERA-----------------------\n" << def;
     if(fila.size()) {
-        cout <<"|";
+        cout << lmagenta <<"|" << def;
         while(!fila.empty()) {
-            cout << fila.front() << "|" ;
+            cout << lmagenta << fila.front() << "|" << def ;
             fila.pop();
         }
         cout << "\n";
@@ -45,8 +47,8 @@ void *barbeiro(void *arg) { // Consumidor (barbeiro)
     //pra quando tiver mais de um barbeiro
     barbeiro = (intptr_t) arg;
 
-    do {
-        cout << "Barbeiro " << barbeiro << " está dormindo zZzZz " << '\n';
+  while(1){
+        cout << green << "Barbeiro " << barbeiro << " está dormindo zZzZz " << def << '\n';
         sem_wait(&sem_cliente);
         sem_wait(&mutex);
         atual = sala_espera.front();
@@ -63,8 +65,8 @@ void *barbeiro(void *arg) { // Consumidor (barbeiro)
         cout << "\nAgora, barbeiro " << barbeiro << " está fazendo a barba do cliente " << atual << ".\n";
         n = rand()%10;
         sleep(n);
-        cout << "\nBarbeiro " << barbeiro << " finalizou o serviço com o cliente " << atual << "!\n\n";
-    } while(!finalizado);
+        cout << "\nBarbeiro " << barbeiro << " finalizou o serviço com o cliente " << atual << "!\n\n" << def;
+    }
 
     //cout << "Barbeiro finalizou o expediente!\n- Que dia de cão! - pensou, ao trancar a porta.\n";
 }
@@ -75,7 +77,7 @@ void *cliente(void *arg) {
 
     num = rand()%30;
     sleep(num);
-    cout << "\nCliente " << cliente << " chegando no pedaço!\n";
+    cout << lblue << "\nCliente " << cliente << " chegando no pedaço! \n" << def;
 
     sem_wait(&mutex);
     imprimir_fila(sala_espera);
@@ -111,7 +113,7 @@ int main() {
     sem_init(&sem_cliente, 1, 0);
     sem_init(&mutex, 1, 1);
 
-    cout << "*****************************************************************\n";
+    cout << lmagenta <<"*****************************************************************\n" << def ;
     cout << "O expediente está começando e o barbeiro vai arrumar a barbearia!\n\n";
     // criando as threads dos barbeiros
     for (i = 1; i <= n_barbeiros; i++){
