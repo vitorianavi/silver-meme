@@ -14,7 +14,7 @@ class SalaEspera {
 	public synchronized boolean entrar(int idCliente) {
 		if(sala.size() < tamanho) {
 			System.out.println("Cliente "+idCliente+" entrando na sala de espera.");
-			sala.push(idCliente);
+			sala.addLast(idCliente);
 			imprimir();
 			notify();
 			
