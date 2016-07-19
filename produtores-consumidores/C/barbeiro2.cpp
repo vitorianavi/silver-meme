@@ -138,8 +138,13 @@ int main() {
     sem_init(&mutex, 1, 1);
     sem_init(&print_mutex, 1, 1);
 
-    cout << amarelo <<"*****************************************************************\n" << def ;
-    cout << "\nO expediente está começando e o barbeiro vai arrumar a barbearia!\n\n";
+    cout << amarelo <<"***********************************************************************\n" << def ;
+    if(n_barbeiros == 1){
+        cout << "\nO expediente está começando e o barbeiro vai arrumar a barbearia!\n\n";
+    }else{
+      cout << "\nO expediente está começando e os barbeiros vão arrumar a barbearia!\n\n";
+    }
+
 
     // criando as threads dos barbeiros
     for (i = 1; i <= n_barbeiros; i++){
