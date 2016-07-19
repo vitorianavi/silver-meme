@@ -16,36 +16,40 @@ int   contLeitores, contEscritores, versaoHistorico;
 float *historicoCoeficiente;
 
 
-void consultarCoeficiente() {
+void consultarCoeficiente(int id) {
 	int espera;
 	espera = rand() % 3;
-	printf("O seu coeficiente e %.2f", historicoCoeficiente[versaoHistorico]);
+	printf("Leitor %d consultou que o coeficiente: %.2f",id, historicoCoeficiente[versaoHistorico]);
 }
 
-void alterarCoeficiente() {
+void alterarCoeficiente(int id) {
 	int espera;
 	espera = rand() % 10;
 	versaoHistorico++;
-	printf("Coeficiente atualizado para %.2f",historicoCoeficiente[versaoHistorico]);
+	printf("Escritor %d alterou o coeficiente, novo valor: %.2f",id,historicoCoeficiente[versaoHistorico]);
 }
 
 //Prioridade dos Leitores
 
 	void leitorA(void *i) {
 		int id= *((int *) i);
-		
-		printf("Leitor %d esta esperando para alterar o numero ");
 		pthread_mutex_lock(&mxLeitores);
 		if(contLeitores==0)  {
+			printf("Leitor %d solicita o acesso a SC.\n",id);
 			pthread_mutex_lock(&portalDoAluno);   
+			printf("Leitor %d liberando o acesso a SC, inclusive para outros leitores.\n",id);
+		}
+		else {
+			printf("Leitor %d ja tem acesso a secao critica, porque ela esta liberada para leitura.\n",id);
 		}
 		contLeitores++;
 		pthread_mutex_unlock(&mxLeitores);        
 		
-		consultarCoeficiente();
+		consultarCoeficiente(id);
 		
 		pthread_mutex_lock(&mxLeitores);                                         
 		if(contLeitores==1) {
+			printf("Leitor %d encerra o acesso a SC.\n",id);
 			pthread_mutex_unlock(&portalDoAluno);
 		}
 		contLeitores--;
@@ -55,8 +59,12 @@ void alterarCoeficiente() {
 	
 	void escritorA(void *i) { 
 		int id= *((int *) i);	
+		printf("Escritor %d solicita o acesso a SC.\n",id);
 		pthread_mutex_lock(&portalDoAluno);    
-		alterarCoeficiente();          
+		
+		alterarCoeficiente();    
+		
+		printf("Escritor %d encerra o acesso a SC.\n",id);
 		pthread_mutex_unlock(&portalDoAluno);     
 	}
 
@@ -64,6 +72,7 @@ void alterarCoeficiente() {
 
 	void leitorB(void *i) {
 		int id= *((int *) i);
+		printf("Leitor %d solicita o acesso a Leitura.\n",id);
 		pthread_mutex_lock(&leitura);
 		pthread_mutex_lock(&mxLeitores);
 		if(contLeitores==0)  {
