@@ -27,7 +27,7 @@ class SalaEspera {
 	}
 
 	public synchronized int get(int idBarbeiro) {
-		while(sala.size() == 0) {
+		if(sala.size() == 0) {
 			try {
 				System.out.println("Barbeiro "+idBarbeiro+" dormindo zZzZz");
 				wait();
@@ -41,7 +41,6 @@ class SalaEspera {
 		sala.removeFirst();
 		System.out.println("Cliente "+cliente+" acordando barbeiro "+idBarbeiro+"!");
 		imprimir();
-	//	notify();
 		
 		return cliente;
 	}
