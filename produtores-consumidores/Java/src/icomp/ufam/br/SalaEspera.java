@@ -5,6 +5,10 @@ import java.util.LinkedList;
 class SalaEspera {
 	private LinkedList<Integer> sala;
 	private int tamanho;
+	public static final String ANSI_RESET = "\u001B[0m";
+	public static final String ANSI_GREEN = "\u001B[32m";
+	public static final String ANSI_YELLOW = "\u001B[33m";
+	public static final String ANSI_MAGENTA = "\u001B[35m";
 
 	SalaEspera(int tamanho) {
 		sala = new LinkedList<Integer>();
@@ -29,7 +33,7 @@ class SalaEspera {
 	public synchronized int get(int idBarbeiro) {
 		while(sala.size() == 0) {
 			try {
-				System.out.println("Barbeiro "+idBarbeiro+" dormindo zZzZz");
+				System.out.println(ANSI_GREEN + "Barbeiro "+idBarbeiro+" dormindo zZzZz" + ANSI_RESET);
 				wait();
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
@@ -47,11 +51,11 @@ class SalaEspera {
 	}
 	
 	public synchronized void imprimir() {
-		System.out.println("------SALA DE ESPERA------");
+		System.out.println(ANSI_YELLOW + "------SALA DE ESPERA------"+ANSI_RESET);
 		if(sala.size()>0) {
-			System.out.print("|");
+			System.out.print(ANSI_MAGENTA + "|" + ANSI_RESET);
 			for(Integer cliente : sala) {
-				System.out.print(cliente+"|");
+				System.out.print(ANSI_MAGENTA+cliente+"|" + ANSI_RESET);
 			}
 			System.out.println();
 		} else {
