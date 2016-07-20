@@ -14,9 +14,9 @@ Execução do programa
 #define SEM_PRIORIDADE 3
 
 using namespace std;
-pthread_mutex_t mxLeitores, mxEscritores,portalDoAluno,leitura, listaDeEspera;
+pthread_mutex_t mxLeitores, mxEscritores, gravacao, portalDoAluno, leitura, listaDeEspera;
 pthread_mutex_t mxPrint;
-int   contLeitores, contEscritores, contEscritoresEsperando, versaoHistorico;
+int contLeitores, contEscritores, contEscritoresEsperando, versaoHistorico;
 float *historicoCoeficiente;
 
 
@@ -32,7 +32,9 @@ Color::Modifier amarelo(Color::FG_AMARELO);
 void consultarCoeficiente(int id) {
 	int espera;
 	espera = rand() % 3;
+	pthread_mutex_lock(&mxPrint);
 	cout << lcyan << "Leitor " << id << def << " consultando coeficiente...\n";
+	pthread_mutex_unlock(&mxPrint);
 	sleep(espera);
 	pthread_mutex_lock(&mxPrint);
 	cout << lcyan << "Leitor " << id << def << " retornou: " << historicoCoeficiente[versaoHistorico] << ".\n";
@@ -41,7 +43,7 @@ void consultarCoeficiente(int id) {
 
 void alterarCoeficiente(int id) {
 	int espera;
-	espera = rand() % 10;
+	espera = rand() % 5;
 	cout << lmagenta << "Escritor " << id << def << " alterando o coeficiente...\n";
 	sleep(espera);
 	versaoHistorico++;
@@ -50,7 +52,7 @@ void alterarCoeficiente(int id) {
 
 //Prioridade dos Leitores
 void *leitorA(void *i) {
-	int id= *((int *) i);
+	/*int id= *((int *) i);
 
 	// Iniciando mutex de controle
 	pthread_mutex_lock(&mxLeitores);
@@ -80,11 +82,40 @@ void *leitorA(void *i) {
 	contLeitores--;
 
 	// Liberando mutex de controle
+	pthread_mutex_unlock(&mxLeitores);*/
+	int id= *((int *) i);
+
+	pthread_mutex_lock(&mxLeitores);
+	cout << lcyan << "Leitor " << id << def << " solicita acesso ao coeficiente.\n";
+	if(contLeitores==0)  {
+		pthread_mutex_lock(&gravacao);
+		cout << lcyan << "Leitor " << id << def << red << " (bloqueado)\n" << def;
+		pthread_mutex_lock(&portalDoAluno);
+		cout << lcyan << "Leitor " << id << def << green << " (liberado)" << def << ". Liberado o acesso ao coeficiente para outros leitores.\n";
+	}
+	else {
+		cout << lcyan << "Leitor " << id << def << green << " (liberado)" << def << ". Coeficiente está liberado para consulta.\n";
+	}
+	contLeitores++;
+	pthread_mutex_unlock(&mxLeitores);
+
+	consultarCoeficiente(id);
+
+	pthread_mutex_lock(&mxLeitores);
+	if(contLeitores==1) {
+		cout << lcyan << "Leitor " << id << def << " liberando acesso para escritores.\n";
+		pthread_mutex_unlock(&portalDoAluno);
+	//	pthread_mutex_unlock(&gravacao);
+	}
+	contLeitores--;
+
 	pthread_mutex_unlock(&mxLeitores);
 }
 
 	void *escritorA(void *i) {
 		int id= *((int *) i);
+
+	//	pthread_mutex_lock(&gravacao);
 
 		pthread_mutex_lock(&mxPrint);
 		cout << lmagenta << "Escritor " << id << def << " solicita o acesso ao coeficiente." << red << "(bloqueado)\n" << def;
@@ -96,67 +127,60 @@ void *leitorA(void *i) {
 
 		cout << lmagenta << "Escritor " << id << def << " liberando acesso ao coeficiente.\n";
 		pthread_mutex_unlock(&portalDoAluno);
+	//	pthread_mutex_unlock(&gravacao);
 	}
 
 //Prioridade dos Escritores
 
 	void *leitorB(void *i) {
-		int id= *((int *) i);
-//		pthread_mutex_lock(&leitura);
-
-		// Iniciando mutex de controle
-	//	pthread_mutex_lock(&mxLeitores);
+		int id = *((int *) i);
+		pthread_mutex_lock(&leitura);
+		pthread_mutex_lock(&mxLeitores);
 		cout << lcyan << "Leitor " << id << def << " solicita o acesso ao coeficiente.\n";
-		if(contEscritores > 0 || contEscritoresEsperando > 0)  {
+		if(contLeitores==0)  {
 			cout << lcyan << "Leitor " << id << def << red << " (bloqueado)\n" << def;
-			pthread_mutex_lock(&leitura);
-			//cout << lcyan << "Leitor " << id << def << green << " (liberado)" << def << ".\n";
+			pthread_mutex_lock(&portalDoAluno);
+			cout << lcyan << "Leitor " << id << def << green << " (liberado)" << def << ".\n";
 		}
 		contLeitores++;
-		// Liberando mutex de controle
-	//	pthread_mutex_unlock(&mxLeitores);
-	//	pthread_mutex_unlock(&leitura);
+		pthread_mutex_unlock(&mxLeitores);
+		pthread_mutex_unlock(&leitura);
 
 		consultarCoeficiente(id);
 
-		// Iniciando mutex de controle
-//		pthread_mutex_lock(&mxLeitores);
-		contLeitores--;
-		if(contLeitores==0) {
-			cout << lcyan << "Leitor " << id << def << green << " (liberado)" << def << "\n";
-			pthread_mutex_unlock(&leitura);
+		pthread_mutex_lock(&mxLeitores);
+		if(contLeitores==1) {
+			cout << lcyan << "Leitor " << id << def << green << " liberando acesso ao coeficiente." << def << "\n";
+			pthread_mutex_unlock(&portalDoAluno);
 		}
+		contLeitores--;
 
-		// Liberando mutex de controle
-		//pthread_mutex_unlock(&mxLeitores);
+		pthread_mutex_unlock(&mxLeitores);
 	}
 
 	void *escritorB(void *i) {
 		int id= *((int *) i);
 		pthread_mutex_lock(&mxEscritores);
-
-		contEscritoresEsperando++;
-		if(contLeitores > 0 || contEscritores > 0) {
-			cout << lmagenta << "Escritor " << id << def << " solicita acesso ao coeficiente." << red << "(bloqueado)\n" << def;
+		if(contEscritores==0) {
+			cout << lmagenta << "Escritor " << id << def << red << " bloqueando acesso para leitores.\n" << def;
 			pthread_mutex_lock(&leitura);
-			cout << lmagenta << "Escritor " << id << def << green << " (liberado)\n" << def;
 		}
-		contEscritoresEsperando--;
 		contEscritores++;
 		pthread_mutex_unlock(&mxEscritores);
 
+		cout << lmagenta << "Escritor " << id << def << " solicita acesso ao coeficiente." << red << "(bloqueado)\n" << def;
 		pthread_mutex_lock(&portalDoAluno);
 		alterarCoeficiente(id);
+		cout << lmagenta << "Escritor " << id << def << green << " (liberado)\n" << def;
 		pthread_mutex_unlock(&portalDoAluno);
 
-		//pthread_mutex_lock(&mxEscritores);
-		/*if(contEscritores==1) {
-			cout << lmagenta << "Escritor " << id << def << green << " liberando sessão crítica.\n" << def;
-
-		}*/
+		pthread_mutex_lock(&mxEscritores);
+		if(contEscritores==1) {
+			cout << lmagenta << "Escritor " << id << def << green << " liberando acesso para leitores.\n" << def;
+			pthread_mutex_unlock(&leitura);
+		}
 		contEscritores--;
-		pthread_mutex_unlock(&leitura);
-		//pthread_mutex_unlock(&mxEscritores);
+		pthread_mutex_unlock(&mxEscritores);
 	}
 
 
@@ -231,13 +255,14 @@ int main(int argc, char* argv[]) {
 	pthread_mutex_init(&portalDoAluno, NULL);
 	pthread_mutex_init(&mxLeitores, NULL);
 	pthread_mutex_init(&mxEscritores, NULL);
+	pthread_mutex_init(&gravacao, NULL);
 	pthread_mutex_init(&leitura, NULL);
 	pthread_mutex_init(&listaDeEspera, NULL);
 	pthread_mutex_init(&mxPrint, NULL);
 
 	switch(prioridade) {
 		case PRIORIDADE_LEITORES:
-			for(i=0;i < qtdEscritores;i++){
+			for(i=0;i < qtdEscritores-4;i++){
 				num = (int*) malloc(sizeof(int));
 				*num = i+1;
 				if(pthread_create(&escritores[i], NULL,escritorA, (void*)num)){
@@ -250,19 +275,26 @@ int main(int argc, char* argv[]) {
 				*num = i+1;
 				pthread_create(&leitores[i], NULL, leitorA, (void*) num);
 			}
+
+			for(i=qtdEscritores-4;i < qtdEscritores;i++){
+				num = (int*) malloc(sizeof(int));
+				*num = i+1;
+				if(pthread_create(&escritores[i], NULL,escritorA, (void*)num)){
+					cout << "Portal em Manutenção :/ \n";
+				}
+			}
 			break;
 
 		case PRIORIDADE_ESCRITORES:
-			for(i=0;i<qtdLeitores;i++){
-				num = (int*) malloc(sizeof(int));
-				*num = i+1;
-				pthread_create( &leitores[i], NULL, leitorB, (void*)num);
-			}
-
 			for(i=0;i<qtdEscritores;i++){
 				num = (int*) malloc(sizeof(int));
 				*num = i+1;
 				pthread_create( &escritores[i], NULL, escritorB, (void*)num);
+			}
+			for(i=0;i<qtdLeitores;i++){
+				num = (int*) malloc(sizeof(int));
+				*num = i+1;
+				pthread_create( &leitores[i], NULL, leitorB, (void*)num);
 			}
 			break;
 
