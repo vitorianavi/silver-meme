@@ -2,6 +2,11 @@ package icomp.ufam.br;
 
 import java.util.Scanner;
 
+/*Autores: Ana Vitória Vitoriano, Maria Clara Melo, Mário Damhur, Paulo Rodrigo Martins 
+ * Fontes:
+ * https://en.wikipedia.org/wiki/Producer%E2%80%93consumer_problem
+ * http://crunchify.com/java-producer-consumer-example-handle-concurrent-read-write/
+ * http://www.csc.villanova.edu/~mdamian/threads/javamonitors.html*/
 
 public class BarbeariaTopOfLine {
 	public int numBarbeiros;

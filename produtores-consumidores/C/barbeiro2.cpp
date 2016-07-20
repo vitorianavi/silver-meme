@@ -1,3 +1,9 @@
+/*
+Autores: Ana Vitória Vitoriano, Maria Clara, Mário Damhur, Paulo Rodrigo Martins
+Fontes:
+https://en.wikipedia.org/wiki/Producer%E2%80%93consumer_problem
+http://lia.deis.unibo.it/Courses/RTOS/assignments/2013_05_08/barber/barber.c
+*/
 #include <iostream>
 #include <queue>
 #include <stdlib.h>
