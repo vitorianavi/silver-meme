@@ -2,82 +2,94 @@ package teste;
 
 import java.util.ArrayList;
 import java.util.Random;
+import java.util.Scanner;
 
 class LeitorEscritor {
 	public static final int PRIORIDADE_LEITORES = 1;
 	public static final int PRIORIDADE_ESCRITORES =2;
 	public static final int SEM_PRIORIDADES = 3;
-	static final int L = 5;
-	static final int E = 3;
+	//static final int L = 6;
+	//static final int E = 2;
 	private Float coeficienteAtual;
 	ArrayList<Float> listaDeEscrita;
-	
 
-	
-	
-	public LeitorEscritor() {
+	public static final String ANSI_RESET = "\u001B[0m";
+	public static final String ANSI_BLACK = "\u001B[30m";
+	public static final String ANSI_RED = "\u001B[31m";
+	public static final String ANSI_GREEN = "\u001B[32m";
+	public static final String ANSI_YELLOW = "\u001B[33m";
+	public static final String ANSI_BLUE = "\u001B[34m";
+	public static final String ANSI_PURPLE = "\u001B[35m";
+	public static final String ANSI_CYAN = "\u001B[36m";
+	public static final String ANSI_WHITE = "\u001B[37m";
+
+
+
+	public LeitorEscritor(int prioridade,int numLeitores, int numEscritores, ArrayList<Float> lista) {
 		int i;
-		LE monitor = new LE(SEM_PRIORIDADES); // monitor
-		Leitor[] l = new Leitor[L]; // leitores
-		Escritor[] e = new Escritor[E]; // escritores
+		LE monitor = new LE(prioridade); // monitor
+		Leitor[] l = new Leitor[numLeitores]; // leitores
+		Escritor[] e = new Escritor[numEscritores]; // escritores
 
 		this.coeficienteAtual=0f;
-		this.listaDeEscrita = new ArrayList<>();
-		
+		this.listaDeEscrita = lista;
+
 		listaDeEscrita.add(10f);
 		listaDeEscrita.add(8f);
-		listaDeEscrita.add(5f);
-		
-		for (i=0; i<L; i++) {
+		//	listaDeEscrita.add(5f);
+
+		for (i=0; i<numLeitores; i++) {
 			l[i] = new Leitor(monitor, i+1); l[i].start();
 		}
-		for (i=0; i<E; i++) {
+
+		for (i=0; i<numEscritores; i++) {
 			e[i] = new Escritor(monitor, i+1); e[i].start();
 		}
-		
+
+
 	}
 
 
 	class Escritor extends Thread {
-		//objeto monitor para coordenar a lÛgica de execuÁ„o
+		//objeto monitor para coordenar a lÔøΩgica de execuÔøΩÔøΩo
 		LE monitor;
 		private int id;
-		
+
 		Escritor (LE m, int idEscritor) {
 			this.monitor = m;
 			this.id = idEscritor;
 		}
-		
+
 		public void run () {
 			this.monitor.EntraEscritor(id);
 			alterarCoeficiente();
 			this.monitor.SaiEscritor(id);
 		}
-		
+
 		public void alterarCoeficiente() {
 			Random rand = new Random();
 			int n = rand.nextInt(20);
-			
+
 			Float valorAntigo = coeficienteAtual;
 			coeficienteAtual = listaDeEscrita.get(0);
 			listaDeEscrita.remove(0);
-			
-			System.out.println("Escritor "+id+" alterando coeficiente...");
+
+			System.out.println(ANSI_PURPLE +"Escritor "+id+":"+ANSI_RESET+"alterando coeficiente...");
 			try {
 				Thread.sleep(n*1000);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			
-			System.out.println("Escritor "+id+" alterou o valor de "+valorAntigo+" para "+coeficienteAtual+".");
+
+			System.out.println(ANSI_PURPLE +"Escritor "+id+":"+ANSI_RESET + valorAntigo+" para "+coeficienteAtual+".");
 		}
 
 
 	}
 
 	class Leitor extends Thread {
-		//objeto monitor para coordenar a l¥ogica de execu∏c~ao
+		//objeto monitor para coordenar a lÔøΩogica de execuÔøΩc~ao
 		LE monitor;
 		private int id;
 
@@ -85,9 +97,9 @@ class LeitorEscritor {
 			this.monitor = m;
 			this.id = idEscritor;
 		}
-		
+
 		public void run () {
-			Random rand = new Random();
+			/*Random rand = new Random();
 			int n = rand.nextInt(20);
 
 			try {
@@ -95,18 +107,18 @@ class LeitorEscritor {
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
-			}
-			
+			}*/
+
 			this.monitor.EntraLeitor(id);
 			consultarCoeficiente();
 			this.monitor.SaiLeitor(id);
 		}
-		
+
 		public synchronized void consultarCoeficiente() {
 			Random rand = new Random();
 			int n = rand.nextInt(20);
-			
-			System.out.println("Leitor "+id+" lendo coeficiente...");
+
+			System.out.println(ANSI_CYAN+"Leitor "+ id +":" +ANSI_RESET +" lendo coeficiente...");
 			try {
 				Thread.sleep(n*1000);
 			} catch (InterruptedException e) {
@@ -114,13 +126,32 @@ class LeitorEscritor {
 				e.printStackTrace();
 			}
 
-			System.out.println("Leitor "+id+": "+coeficienteAtual);
+			System.out.println(ANSI_CYAN+"Leitor "+ id +":" +ANSI_RESET+coeficienteAtual);
 
 		}
 	}
-	
+
 
 	public static void main (String[] args) {
-		LeitorEscritor rw = new LeitorEscritor();
+		System.out.println(ANSI_YELLOW +"***********************************************************************" + ANSI_RESET);
+		System.out.println(ANSI_YELLOW +"****************************"+ANSI_RESET + ANSI_CYAN+"PORTAL DO ALUNO"+ANSI_RESET+ANSI_YELLOW+"****************************"+ANSI_RESET);
+		System.out.println(ANSI_YELLOW +"***********************************************************************" + ANSI_RESET);
+		Scanner reader = new Scanner(System.in);  // Reading from System.in
+		System.out.println("N√∫mero de professores(Escritores): ");
+		int numEscritores = reader.nextInt();
+		System.out.println("N√∫mero de consultas ao coeficiente(Leitores):");
+		int numLeitores = reader.nextInt();
+		System.out.println("Prioridades (1-Leitores, 2-Escritores, 3-Sem prioridade): ");
+		int prioridades  = reader.nextInt();
+		ArrayList<Float> listaDeEscrita = new ArrayList<>();
+		System.out.println("Altera√ß√µes dos coeficientes(" + ANSI_RED + "N√∫meros de alera√ß√µes deve ser igual ao n√∫mero de escritores"+ANSI_RESET +")");
+		if(reader.hasNextFloat()) {
+			Float d = reader.nextFloat();
+			listaDeEscrita.add(d);
+		}
+		reader.close();
+
+		LeitorEscritor rw = new LeitorEscritor(prioridades,numEscritores,numLeitores, listaDeEscrita);
+
 	}
 }
